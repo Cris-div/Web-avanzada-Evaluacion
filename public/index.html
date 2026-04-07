@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Items</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg:       #0f0f0e;
+            --s1:       #181816;
+            --s2:       #1f1f1d;
+            --s3:       #272724;
+            --border:   #2c2c29;
+            --border2:  #3a3a36;
+            --text:     #e8e6df;
+            --muted:    #78756d;
+            --subtle:   #48453f;
+            --accent:   #e07a3a;
+            --accent2:  #c96430;
+            --red:      #d95b5b;
+            --red-bg:   #2a1616;
+            --green:    #5fa36e;
+            --edit:     #7a9ecf;
+            --edit-bg:  #151e2a;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Layout */
+        .page {
+            max-width: 620px;
+            margin: 0 auto;
+            padding: 48px 20px 80px;
+        }
+
+        /* Header */
+        header { margin-bottom: 36px; }
+
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .status-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+        }
+
+        .header-meta span {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: var(--text);
+        }
+
+        h1 em {
+            font-style: normal;
+            color: var(--accent);
+        }
+
+        /* Form card */
+        .form-card {
+            background: var(--s1);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 28px;
+            transition: border-color 0.2s;
+        }
+
+        .form-card.editing {
+            border-color: var(--edit);
+        }
+
+        .form-card-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--muted);
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .form-card-label .mode-badge {
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .mode-badge.create { background: rgba(224,122,58,0.12); color: var(--accent); }
+        .mode-badge.edit   { background: rgba(122,158,207,0.12); color: var(--edit); }
+
+        .fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 460px) { .fields { grid-template-columns: 1fr; } }
+
+        .field label {
+            display: block;
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 10px 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--border2);
+            box-shadow: 0 0 0 3px rgba(224,122,58,0.07);
+        }
+
+        input[type="text"].editing:focus {
+            box-shadow: 0 0 0 3px rgba(122,158,207,0.08);
+            border-color: var(--edit);
+        }
+
+        input::placeholder { color: var(--subtle); }
+
+        .form-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-save {
+            flex: 1;
+            padding: 10px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+        }
+
+        .btn-save:hover { background: var(--accent2); }
+        .btn-save:active { transform: scale(0.99); }
+        .btn-save.editing { background: var(--edit); }
+        .btn-save.editing:hover { background: #6a8ebf; }
+        .btn-save.loading { opacity: 0.45; pointer-events: none; }
+
+        .btn-cancel {
+            padding: 10px 14px;
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .btn-cancel:hover { color: var(--text); border-color: var(--border2); }
+
+        /* List */
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2px;
+            margin-bottom: 10px;
+        }
+
+        .list-title {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+        }
+
+        .count-pill {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--subtle);
+            background: var(--s2);
+            border: 1px solid var(--border);
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        /* Item rows */
+        #lista { list-style: none; }
+
+        #lista li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--s1);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 13px 14px;
+            margin-bottom: 6px;
+            animation: slideUp 0.2s ease both;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        #lista li:hover {
+            background: var(--s2);
+            border-color: var(--border2);
+        }
+
+        .item-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--subtle);
+            min-width: 22px;
+        }
+
+        .item-body { flex: 1; min-width: 0; }
+
+        .item-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-desc {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+
+        .btn-icon {
+            width: 30px; height: 30px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .btn-edit:hover  { background: var(--edit-bg); border-color: var(--edit); }
+        .btn-delete:hover { background: var(--red-bg); border-color: var(--red); }
+
+        /* Empty */
+        .empty {
+            text-align: center;
+            padding: 36px 0;
+            color: var(--subtle);
+            font-size: 13px;
+            border: 1px dashed var(--border);
+            border-radius: 9px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--s3);
+            border: 1px solid var(--border2);
+            color: var(--text);
+            font-size: 13px;
+            padding: 9px 16px;
+            border-radius: 8px;
+            white-space: nowrap;
+            z-index: 99;
+            animation: toastIn 0.2s ease both;
+        }
+
+        .toast.hide { opacity: 0; transition: opacity 0.2s; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(5px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <header>
+        <div class="header-meta">
+            <div class="status-dot"></div>
+            <span>/items — CRUD</span>
+        </div>
+        <h1>Gestión de <em>Items</em></h1>
+    </header>
+
+    <div class="form-card" id="formCard">
+        <div class="form-card-label">
+            <span id="formLabel">Registro</span>
+            <span class="mode-badge create" id="modeBadge">Nuevo</span>
+        </div>
+        <div class="fields">
+            <div class="field">
+                <label>Nombre</label>
+                <input type="text" id="nombre" placeholder="ej. Producto A">
+            </div>
+            <div class="field">
+                <label>Descripción</label>
+                <input type="text" id="descripcion" placeholder="ej. Descripción breve">
+            </div>
+        </div>
+        <div class="form-actions">
+            <button class="btn-save" id="btnSave" onclick="guardarItem()">Guardar</button>
+            <button class="btn-cancel" id="btnCancel" onclick="cancelarEdicion()" style="display:none">Cancelar</button>
+        </div>
+    </div>
+
+    <div class="list-header">
+        <span class="list-title">Items</span>
+        <span class="count-pill" id="count">0</span>
+    </div>
+
+    <ul id="lista"></ul>
+
+</div>
+
+<script>
+    const API = "/items";
+    let editandoId = null;
+
+    async function cargarItems() {
+        try {
+            const res = await fetch(API);
+            const data = await res.json();
+            renderItems(data);
+        } catch { renderError(); }
+    }
+
+    function renderItems(data) {
+        const lista = document.getElementById("lista");
+        document.getElementById("count").textContent = data.length;
+
+        if (!data.length) {
+            lista.innerHTML = `<div class="empty">Sin items todavía — agrega el primero</div>`;
+            return;
+        }
+
+        lista.innerHTML = "";
+        data.forEach((item, i) => {
+            const li = document.createElement("li");
+            li.style.animationDelay = `${i * 25}ms`;
+            li.innerHTML = `
+                <span class="item-num">${String(i + 1).padStart(2, '0')}</span>
+                <div class="item-body">
+                    <div class="item-name">${item.nombre}</div>
+                    ${item.descripcion ? `<div class="item-desc">${item.descripcion}</div>` : ''}
+                </div>
+                <div class="item-actions">
+                    <button class="btn-icon btn-edit" onclick="editar(${item.id}, '${item.nombre}', '${item.descripcion}')" title="Editar">✏️</button>
+                    <button class="btn-icon btn-delete" onclick="eliminar(${item.id})" title="Eliminar">🗑️</button>
+                </div>`;
+            lista.appendChild(li);
+        });
+    }
+
+    function renderError() {
+        document.getElementById("lista").innerHTML =
+            `<div class="empty">No se pudo conectar al servidor</div>`;
+    }
+
+    async function guardarItem() {
+        const nombre = document.getElementById("nombre").value.trim();
+        const descripcion = document.getElementById("descripcion").value.trim();
+        if (!nombre) { document.getElementById("nombre").focus(); return; }
+
+        const btn = document.getElementById("btnSave");
+        btn.classList.add("loading");
+        btn.textContent = "Guardando...";
+
+        try {
+            if (editandoId) {
+                await fetch(`${API}/${editandoId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ nombre, descripcion })
+                });
+                toast("Item actualizado");
+                cancelarEdicion();
+            } else {
+                await fetch(API, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ nombre, descripcion })
+                });
+                toast("Item guardado");
+                limpiar();
+            }
+            await cargarItems();
+        } catch { toast("Error al guardar"); }
+
+        btn.classList.remove("loading");
+        btn.textContent = "Guardar";
+    }
+
+    function editar(id, nombre, descripcion) {
+        editandoId = id;
+        document.getElementById("nombre").value = nombre;
+        document.getElementById("descripcion").value = descripcion;
+
+        document.getElementById("formCard").classList.add("editing");
+        document.getElementById("modeBadge").textContent = "Editando";
+        document.getElementById("modeBadge").className = "mode-badge edit";
+        document.getElementById("btnSave").classList.add("editing");
+        document.getElementById("btnSave").textContent = "Actualizar";
+        document.getElementById("btnCancel").style.display = "block";
+
+        document.querySelectorAll("input").forEach(i => i.classList.add("editing"));
+        document.getElementById("nombre").focus();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function cancelarEdicion() {
+        editandoId = null;
+        limpiar();
+        document.getElementById("formCard").classList.remove("editing");
+        document.getElementById("modeBadge").textContent = "Nuevo";
+        document.getElementById("modeBadge").className = "mode-badge create";
+        document.getElementById("btnSave").classList.remove("editing");
+        document.getElementById("btnSave").textContent = "Guardar";
+        document.getElementById("btnCancel").style.display = "none";
+        document.querySelectorAll("input").forEach(i => i.classList.remove("editing"));
+    }
+
+    async function eliminar(id) {
+        try {
+            await fetch(`${API}/${id}`, { method: "DELETE" });
+            await cargarItems();
+            toast("Item eliminado");
+        } catch { toast("Error al eliminar"); }
+    }
+
+    function limpiar() {
+        document.getElementById("nombre").value = "";
+        document.getElementById("descripcion").value = "";
+    }
+
+    function toast(msg) {
+        document.querySelector(".toast")?.remove();
+        const t = document.createElement("div");
+        t.className = "toast";
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => { t.classList.add("hide"); setTimeout(() => t.remove(), 200); }, 2000);
+    }
+
+    document.addEventListener("keydown", e => {
+        if (e.key === "Enter") guardarItem();
+        if (e.key === "Escape") cancelarEdicion();
+    });
+
+    cargarItems();
+</script>
+</body>
+</html>
