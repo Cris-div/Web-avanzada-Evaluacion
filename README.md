@@ -7,3 +7,6 @@
 
 # Api publica: 
 <img width="1366" height="412" alt="image" src="https://github.com/user-attachments/assets/aa84455c-8123-479b-8664-0a8488851c14" />
+
+# Postaman
+<img width="933" height="586" alt="image" src="https://github.com/user-attachments/assets/6fb641f8-294d-4619-8c3c-510a795ffab0" />
